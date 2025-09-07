@@ -6,33 +6,29 @@ import os
 app = Flask(__name__)
 
 # Load the model
-file_path = "random_forest_model.pkl"  # Path to the model file
-with open(file_path, 'rb') as file:
+model_path = os.path.join(os.path.dirname(__file__), "random_forest_model.pkl")
+with open(model_path, "rb") as file:
     model = pickle.load(file)
 
 
-# Define a route for the home page
 @app.route('/')
 def home():
     return "Welcome to the ML Prediction API!"
 
 
-# Define the prediction route
 @app.route('/predict', methods=['POST'])
 def predict():
-    data = request.json  # Get the JSON data from the request
-    features = data['features']  # Extract the features
+    try:
+        data = request.get_json(force=True)  # Ensure JSON parsing
+        features = data['features']
 
-    # Convert to 2D array (since the model expects 2D input)
-    features = np.array(features).reshape(1, -1)
+        features = np.array(features).reshape(1, -1)
+        prediction = model.predict(features)
 
-    # Make the prediction
-    prediction = model.predict(features)
-
-    # Return the prediction as JSON
-    return jsonify({'prediction': prediction.tolist()})
+        return jsonify({'prediction': prediction.tolist()})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))  # Railway هيحط قيمة PORT
-    app.run(host='0.0.0.0', port=port)
+    app.run(debug=True)
